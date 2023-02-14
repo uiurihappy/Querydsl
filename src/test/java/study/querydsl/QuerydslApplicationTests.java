@@ -30,12 +30,13 @@ class QuerydslApplicationTests {
 		QHello qHello = new QHello("h");
 
 		// query 와 관련된 거는 q타입을 넣는다.
-		Hello hello1 = query
+		Hello result = query
 				.selectFrom(qHello)
 				.fetchOne();
 
-		assertEquals(hello1, hello);
-
+		assertEquals(result, hello);
+		// Lombok Test
+		assertEquals(result.getId(), hello.getId());
 	}
 
 }
