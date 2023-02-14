@@ -38,3 +38,6 @@ out/
 
 ### Querydsl
 /src/main/generated
+
+### application properties
+/src/main/resources/application.yml
