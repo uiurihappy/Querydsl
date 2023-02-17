@@ -18,6 +18,8 @@ spring:
       hibernate:
 #        show_sql: true
         format_sql: true
+        # jpql이 궁금할 때
+        use_sql_comments: true
   #        default_batch_fetch_size: 500
   devtools:
     restart:

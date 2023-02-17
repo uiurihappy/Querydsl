@@ -2,7 +2,6 @@ package study.querydsl;
 
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +12,7 @@ import study.querydsl.entity.QMember;
 import study.querydsl.entity.Team;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static study.querydsl.entity.QMember.member;
 
 @SpringBootTest
 @Transactional
@@ -73,13 +73,31 @@ public class QuerydslBasicTest {
 		5. 파라미터 바인딩을 안해도 자동으로 넣으면 된다.
 		- 런타임 오류가 아닌 자바 컴파일 시점부터 에러를 잡아준다.
 		 */
-		QMember m = new QMember("m");
+//		QMember m = new QMember("m");
+//		QMember m = QMember.member;
 
+//		Member findMember = queryFactory
+//				.select(m)
+//				.from(m)
+//				.where(m.username.eq("member1")) // 자동으로 파라미터 바인딩 처리
+//				.fetchOne();
+
+		// static import (권장 사항)
+		// Querydsl은 JPQL의 Builder 역할 수행
 		Member findMember = queryFactory
-				.select(m)
-				.from(m)
-				.where(m.username.eq("member1")) // 자동으로 파라미터 바인딩 처리
+				.select(member)
+				.from(member)
+				.where(member.username.eq("member1")) // 자동으로 파라미터 바인딩 처리
 				.fetchOne();
+
+		// 같은 테이블 join할 때 유용
+//		QMember m1 = new QMember("m1"); // JPQL의 alias가 m1으로 바뀜
+//		Member findMember = queryFactory
+//				.select(member)
+//				.from(member)
+//				.where(member.username.eq("member1")) // 자동으로 파라미터 바인딩 처리
+//				.fetchOne();
+
 
 		assertEquals(findMember.getUsername(), "member1");
 	}
