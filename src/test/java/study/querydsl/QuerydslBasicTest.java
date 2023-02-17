@@ -189,4 +189,33 @@ public class QuerydslBasicTest {
 
 	}
 
+	@Test
+	public void paging1() {
+		List<Member> results = queryFactory
+				.selectFrom(member)
+				.orderBy(member.username.desc())
+				.offset(1)      // index는 0이니까 앞에 한 개 skip하고 정렬
+				.limit(2)
+				.fetch();
+
+		assertEquals(results.size(), 2);
+	}
+
+	@Test
+	public void paging2() {
+		QueryResults<Member> queryResults = queryFactory
+				.selectFrom(member)
+				.orderBy(member.username.desc())
+				.offset(1)      // index는 0이니까 앞에 한 개 skip하고 정렬
+				.limit(2)
+				.fetchResults();
+
+		assertEquals(queryResults.getTotal(), 4);
+		assertEquals(queryResults.getLimit(), 2);
+		assertEquals(queryResults.getOffset(), 1);
+		assertEquals(queryResults.getResults().size(), 2);
+
+
+	}
+
 }
