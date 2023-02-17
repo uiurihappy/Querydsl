@@ -1,6 +1,7 @@
 package study.querydsl;
 
 import com.querydsl.core.QueryResults;
+import com.querydsl.core.Tuple;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
@@ -10,12 +11,14 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 import study.querydsl.entity.Member;
 import study.querydsl.entity.QMember;
+import study.querydsl.entity.QTeam;
 import study.querydsl.entity.Team;
 
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static study.querydsl.entity.QMember.member;
+import static study.querydsl.entity.QTeam.team;
 
 @SpringBootTest
 @Transactional
@@ -189,6 +192,7 @@ public class QuerydslBasicTest {
 
 	}
 
+	// Paging
 	@Test
 	public void paging1() {
 		List<Member> results = queryFactory
@@ -218,4 +222,50 @@ public class QuerydslBasicTest {
 
 	}
 
+	@Test
+	public void aggregation() {
+		// querydsl Tuple:
+		List<Tuple> result = queryFactory
+				.select(
+						member.count(),
+						member.age.sum(),
+						member.age.avg(),
+						member.age.max(),
+						member.age.min()
+				)
+				.from(member)
+				.fetch();
+
+		Tuple tuple = result.get(0);
+
+		assertEquals(tuple.get(member.count()), 4);
+		assertEquals(tuple.get(member.age.sum()), 100);
+		assertEquals(tuple.get(member.age.avg()), 25);
+		assertEquals(tuple.get(member.age.max()), 40);
+		assertEquals(tuple.get(member.age.min()), 10);
+
+	}
+
+	/**
+	 * 팀의 이름과 각 팀의 평균 연령을 구해라.
+	 */
+	@Test
+	public void groupby() {
+		List<Tuple> result = queryFactory
+				.select(team.name, member.age.avg())
+				.from(member)
+				.join(member.team, team)
+				.groupBy(team.name)
+				.fetch();
+
+		Tuple teamA = result.get(0);
+		Tuple teamB = result.get(1);
+
+		assertEquals(teamA.get(team.name), "teamA");
+		assertEquals(teamA.get(member.age.avg()), 20);
+
+		assertEquals(teamB.get(team.name), "teamB");
+		assertEquals(teamB.get(member.age.avg()), 30);
+
+	}
 }
