@@ -102,4 +102,31 @@ public class QuerydslBasicTest {
 		assertEquals(findMember.getUsername(), "member1");
 	}
 
+	@Test
+	public void search() {
+		// member1 이면서 age가 10에서 30 사이인 사람 조회
+		Member findMember = queryFactory
+				.selectFrom(member)
+				.where(member.username.eq("member1")
+						.and(member.age.between(10, 30)))
+				.fetchOne();
+
+		assertEquals(findMember.getUsername(), "member1");
+	}
+
+	@Test
+	public void searchAndParam() {
+		// member1 이면서 age가 10인 사람 조회
+		// and 조건인 경우 ,(chain) 를 활용하여 사용하는 것을 권장
+		Member findMember = queryFactory
+				.selectFrom(member)
+				.where(
+						member.username.eq("member1"),
+						member.age.eq(10), null
+				)
+				.fetchOne();
+
+		assertEquals(findMember.getUsername(), "member1");
+	}
+
 }
