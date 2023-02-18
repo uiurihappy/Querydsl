@@ -309,4 +309,102 @@ public class QuerydslBasicTest {
 				.extracting("username")
 				.containsExactly("teamA", "teamB");
 	}
+
+	/**
+	 * 예) 회원과 팀을 조인하면서, 팀 이름이 teamA인 팀만 조인, 회원은 모두 조회
+	 * JPQL: select m, t from Member m left join Team m.team t on t.name = 'teamA'
+	 */
+	@Test
+	public void join_on_filtering() {
+		List<Tuple> result = queryFactory
+				.select(member, team)
+				.from(member)
+				/*
+				select
+					m1_0.member_id,
+					m1_0.age,
+					m1_0.team_id,
+					m1_0.username,
+					t1_0.team_id,
+					t1_0.name
+				from
+					member m1_0
+				left join
+					team t1_0
+						on t1_0.team_id=m1_0.team_id
+						and t1_0.name=?
+				 */
+				.leftJoin(member.team, team).on(team.name.eq("teamA"))
+				/*
+				select
+					m1_0.member_id,
+					m1_0.age,
+					m1_0.team_id,
+					m1_0.username,
+					t1_0.team_id,
+					t1_0.name
+				from
+					member m1_0
+				join
+					team t1_0
+						on t1_0.team_id=m1_0.team_id
+						and t1_0.name=?
+				 */
+//				.join(member.team, team)
+//				.on(team.name.eq("teamA"))
+				.where(team.name.eq("teamA"))
+				.fetch();
+
+		for (Tuple tuple : result) {
+			System.out.println("member tuple = " + tuple);
+		}
+
+	}
+
+	/**
+	 * 연관관계 없는 엔티티 외부 조인
+	 * 회원이름과 팀 이름이 같은 회원 조회
+	 */
+	@Test
+	public void join_on_no_relation() {
+		em.persist(new Member("teamA"));
+		em.persist(new Member("teamB"));
+		em.persist(new Member("teamC"));
+
+		/*
+		select
+			m1_0.member_id,
+			m1_0.age,
+			m1_0.team_id,
+			m1_0.username,
+			t1_0.team_id,
+			t1_0.name
+		from
+			member m1_0
+		left join
+			team t1_0
+				on m1_0.username=t1_0.name
+		 */
+		// 외부 조인이 불가능
+		List<Tuple> result = queryFactory
+				.select(member, team)
+				.from(member)
+				.leftJoin(team).on(member.username.eq(team.name))
+				.fetch();
+
+		/*
+		member tuple = [Member(id=1, username=member1, age=10), null]
+		member tuple = [Member(id=2, username=member2, age=20), null]
+		member tuple = [Member(id=3, username=member3, age=30), null]
+		member tuple = [Member(id=4, username=member4, age=40), null]
+		member tuple = [Member(id=5, username=teamA, age=0), Team(id=1, name=teamA)]
+		member tuple = [Member(id=6, username=teamB, age=0), Team(id=2, name=teamB)]
+		member tuple = [Member(id=7, username=teamC, age=0), null]
+		 */
+		for (Tuple tuple : result) {
+			System.out.println("member tuple = " + tuple);
+		}
+	}
+
+
 }
