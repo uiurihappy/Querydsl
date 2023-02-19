@@ -3,6 +3,7 @@ package study.querydsl;
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.dsl.CaseBuilder;
+import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -612,6 +613,42 @@ public class QuerydslBasicTest {
 				.from(member)
 				.fetch();
 
+		for (String s : result) {
+			System.out.println("s = " + s);
+		}
+	}
+
+	// 상수(Constant)가 필요할 때
+	@Test
+	public void constant() {
+
+		// 상수 구하기
+		List<Tuple> result = queryFactory
+				.select(member.username, Expressions.constant("A"))
+				.from(member)
+				.fetch();
+
+		for (Tuple tuple : result) {
+			System.out.println("tuple = " + tuple);
+		}
+	}
+
+	// 문자 더하기 (concat)
+	@Test
+	public void concat() {
+
+		// {username_age}
+		/*
+		select concat(concat(m1_0.username,'_'),cast(m1_0.age as char))
+		from member m1_0 where m1_0
+		 */
+		List<String> result = queryFactory
+				// enum 타입 같이 string인데 string을 인식 못할 때, stringValue()를 사용하면 유용하다.
+				.select(member.username.concat("_").concat(member.age.stringValue()))
+				.from(member)
+				.where(member.username.eq("member1"))
+				.fetch();
+		// s = member1_10
 		for (String s : result) {
 			System.out.println("s = " + s);
 		}
