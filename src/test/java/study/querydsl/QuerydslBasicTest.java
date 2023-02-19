@@ -2,6 +2,8 @@ package study.querydsl;
 
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
+import com.querydsl.jpa.JPAExpressions;
+import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
@@ -18,6 +20,7 @@ import study.querydsl.entity.Team;
 
 import java.util.List;
 
+import static com.querydsl.jpa.JPAExpressions.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static study.querydsl.entity.QMember.member;
@@ -30,6 +33,7 @@ public class QuerydslBasicTest {
 	@Autowired
 	EntityManager em;
 
+	//
 	@PersistenceUnit
 	EntityManagerFactory emf;
 
@@ -320,7 +324,10 @@ public class QuerydslBasicTest {
 	/**
 	 * 예) 회원과 팀을 조인하면서, 팀 이름이 teamA인 팀만 조인, 회원은 모두 조회
 	 * JPQL: select m, t from Member m left join Team m.team t on t.name = 'teamA'
-	 * SQL: SELECT m.*, t.* FROM Member m LEFT JOIN Team t ON m.TEAM_ID=t.id and t.name='teamA'
+	 * SQL:
+	 SELECT m.*, t.*
+	 FROM Member m
+	 LEFT JOIN Team t ON m.TEAM_ID=t.id and t.name='teamA'
 	 */
 	@Test
 	public void join_on_filtering() {
@@ -377,9 +384,12 @@ public class QuerydslBasicTest {
 
 	/**
 	 * 연관관계 없는 엔티티 외부 조인
-	 * 회원이름과 팀 이름이 같은 회원 조회
+	 * 회원이름과 팀 이름이 같은 회원 조회 (member.teamA = team.teamA)
 	 * JPQL: SELECT m, t FROM Member m LEFT JOIN Team t on m.username = t.name
-	 * SQL: SELECT m.*, t.* FROM Member m LEFT JOIN Team t ON m.username = t.name
+	 * SQL:
+	 SELECT m.*, t.*
+	 FROM Member m
+	 LEFT JOIN Team t ON m.username = t.name
 	 */
 	@Test
 	public void join_on_no_relation() {
@@ -429,12 +439,15 @@ public class QuerydslBasicTest {
 		em.flush();
 		em.clear();
 
+		// 기본적으로 지연로딩이기에 team은 조회가 안된다.
 		Member findMember = queryFactory
 				.selectFrom(member)
 				.where(member.username.eq("member1"))
 				.fetchOne();
 
+		// 이미 로딩된 엔티티인지 확인하고자 선언
 		boolean loaded = emf.getPersistenceUnitUtil().isLoaded(findMember.getTeam());
+		System.out.println(loaded);
 		assertThat(loaded).as("페치 조인 미적용").isFalse();
 
 	}
@@ -455,7 +468,107 @@ public class QuerydslBasicTest {
 
 		boolean loaded =
 				emf.getPersistenceUnitUtil().isLoaded(findMember.getTeam());
+		System.out.println(loaded);
 		assertThat(loaded).as("페치 조인 적용").isTrue();
+
+	}
+
+	// SubQuery (서브 쿼리)
+
+	/**
+	 * 나이가 가장 많은 회원 조회
+	 */
+	@Test
+	public void subQuery_ex1() {
+
+		// subQuery 이기에 바깥에 있는 alias랑 겹치면 안됨
+		QMember memberSub = new QMember("memberSub");
+
+		List<Member> result = queryFactory
+				.selectFrom(member)
+				.where(member.age.eq(
+						select(memberSub.age.max())
+								.from(memberSub)
+				))
+				.fetch();
+
+		System.out.println("result = " + result);
+
+		assertThat(result).extracting("age")
+				.containsExactly(40);
+	}
+
+	/**
+	 * 나이가 평균 이상인 회원 조회
+	 */
+	@Test
+	public void subQuery_ex2() {
+
+		// subQuery 이기에 바깥에 있는 alias랑 겹치면 안됨
+		QMember memberSub = new QMember("memberSub");
+
+		List<Member> result = queryFactory
+				.selectFrom(member)
+				// goe = (>=)
+				.where(member.age.goe(
+						select(memberSub.age.avg())
+								.from(memberSub)
+				))
+				.fetch();
+
+		List<Double> ageAvg = queryFactory
+				.select(memberSub.age.avg())
+				.from(memberSub)
+				.fetch();
+		System.out.println("ageAvg = " + ageAvg); // 25.0
+		System.out.println("result = " + result); // [Member(id=3, username=member3, age=30), Member(id=4, username=member4, age=40)]
+
+		assertThat(result).extracting("age")
+				.containsExactly(30, 40);
+	}
+
+	/**
+	 * WHERE IN 처리
+	 */
+	@Test
+	public void subQuery_ex3() {
+
+		// subQuery 이기에 바깥에 있는 alias랑 겹치면 안됨
+		QMember memberSub = new QMember("memberSub");
+
+		List<Member> result = queryFactory
+				.selectFrom(member)
+				// goe = (>=)
+				.where(member.age.in(
+						select(memberSub.age)
+								.from(memberSub)
+								// gt = ( > )
+								.where(memberSub.age.gt(10))
+				))
+				.fetch();
+
+		assertThat(result).extracting("age")
+				.containsExactly(20, 30, 40);
+	}
+
+	/**
+	 * select SubQuery
+	 */
+	@Test
+	public void subQuery_ex4() {
+
+		QMember memberSub = new QMember("memberSub");
+
+		List<Tuple> result = queryFactory
+				.select(member.username,
+						select(member.age.avg())
+								.from(member))
+				.from(member)
+				.fetch();
+
+		for (Tuple tuple : result) {
+			System.out.println("tuple = " + tuple);
+		}
 
 	}
 
