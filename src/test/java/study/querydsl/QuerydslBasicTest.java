@@ -654,4 +654,44 @@ public class QuerydslBasicTest {
 		}
 	}
 
+	// 프로젝션 (Projection) : select 절에 어떤 걸 가져올 지 대상을 지정하는 행위
+	@Test
+	public void simpleProjection() {
+
+		List<String> result = queryFactory
+				.select(member.username)
+				.from(member)
+				.fetch();
+
+		for (String answer : result) {
+			System.out.println("answer = " + answer);
+		}
+	}
+
+	// Tuple Projection
+	@Test
+	public void tupleProjection() {
+
+		List<Tuple> result = queryFactory
+				.select(member.username, member.age)
+				.from(member)
+				.fetch();
+		/*
+		username = member1, age = 10
+		username = member2, age = 20
+		username = member3, age = 30
+		username = member4, age = 40
+		 */
+		for (Tuple tuple : result) {
+			String username = tuple.get(member.username);
+			Integer age = tuple.get(member.age);
+
+			System.out.println("username = " + username + ", age = " + age);
+		}
+		/*
+		1. Tuple은 repository 계층까진 괜찮다만, service 계층이나 controller까지 넘어가는 건 좋지 않다.
+		2. jdbc같은 걸 사용할 때, repository나 dao 계층에서 사용하도록 하지, 나머지에 의존해서는 안된다.
+		 */
+	}
+
 }
