@@ -786,7 +786,9 @@ public class QuerydslBasicTest {
 	@Test
 	public void findDtoByQueryProjection() {
 		List<MemberDto> result = queryFactory
+				// 실제로 생성자를 호출함
 				.select(new QMemberDto(member.username, member.age))
+//				.select(new QMemberDto(member.username, member.age, member.id)) // 는 안됨
 				.from(member)
 				.fetch();
 
