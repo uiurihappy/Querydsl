@@ -19,6 +19,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.Commit;
 import org.springframework.transaction.annotation.Transactional;
 import study.querydsl.dto.MemberDto;
 import study.querydsl.dto.QMemberDto;
@@ -822,8 +823,6 @@ public class QuerydslBasicTest {
 		List<Member> result = searchMember1(usernameParam, ageParam);
 
 		assertThat(result.size()).isEqualTo(1);
-
-
 	}
 
 	// 동적 쿼리 Boolean Builder 메소드
@@ -884,5 +883,85 @@ public class QuerydslBasicTest {
 	// 조립할려면 BooleanExpression 사용
 	private BooleanExpression allEq(String usernameCond, Integer ageCond) {
 		return usernameEq(usernameCond).and(ageEq(ageCond));
+	}
+
+
+	@Test
+	// Transcation에서 commit하고 테스트가 끝나면 rollback 한다.
+//	@Commit
+	public void updateNameBulk() {
+		/*
+		member1 = 10 -> DB member1
+		member2 = 10 -> DB member2
+		member3 = 10 -> DB member3
+		member4 = 10 -> DB member4
+		 */
+		long count = queryFactory
+				.update(member)
+				.set(member.username, "비회원")
+				.where(member.age.lt(28))
+				.execute();
+		// 영속성 컨텍스트에 있는 걸 flush, 초기화 clear를 한다. 벌크 연산할때는 해주는 게 좋다.
+		em.flush();
+		em.clear();
+
+		/*
+		DB 에서 select를 해도 영속성 컨텍스트에 있으면 db에 가져온 거를 버린다.
+		1 member1 = 10 -> 1 DB 비회원
+		2 member2 = 10 -> 2 DB 비회원
+		3 member3 = 10 -> 3 DB member3
+		4 member4 = 10 -> 4 DB member4
+		 */
+
+		List<Member> result = queryFactory
+				.selectFrom(member)
+				.fetch();
+
+		for (Member member1 : result) {
+			System.out.println("member1 = " + member1);
+		}
+		assertThat(count).isEqualTo(2);
+
+	}
+
+	@Test
+	public void updateAgeBulk() {
+		long addCount = queryFactory
+				.update(member)
+//				.set(member.age, member.age.add(1))
+				.set(member.age, member.age.multiply(2))
+				.execute();
+		// 영속성 컨텍스트에 있는 걸 flush, 초기화 clear를 한다.
+		em.flush();
+		em.clear();
+		List<Member> updateAgeResult = queryFactory
+				.selectFrom(member)
+				.fetch();
+
+		for (Member member1 : updateAgeResult) {
+			System.out.println("update Age member = " + member1);
+		}
+		assertThat(addCount).isEqualTo(4);
+	}
+
+	@Test
+	public void deleteBulk() {
+
+		// 삭제 횟수
+		long count = queryFactory
+				.delete(member)
+				.where(member.age.gt(18))
+				.execute();
+
+		em.flush();
+		em.clear();
+		List<Member> deleteAgeResult = queryFactory
+				.selectFrom(member)
+				.fetch();
+
+		for (Member member1 : deleteAgeResult) {
+			System.out.println("remain member = " + member1);
+		}
+		assertThat(count).isEqualTo(3);
 	}
 }
