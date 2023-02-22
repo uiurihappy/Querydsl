@@ -67,10 +67,16 @@ public class QuerydslBasicTest {
 		Member member4 = new Member("member4", 40, teamB);
 
 
+		Member member5 = new Member("MemberA", 50, teamA);
+		Member member6 = new Member("MemberB", 60, teamB);
+
+
 		em.persist(member1);
 		em.persist(member2);
 		em.persist(member3);
 		em.persist(member4);
+		em.persist(member5);
+		em.persist(member6);
 
 		// clear
 //		em.flush();
@@ -964,4 +970,46 @@ public class QuerydslBasicTest {
 		}
 		assertThat(count).isEqualTo(3);
 	}
+
+	@Test
+	public void sqlFunction() {
+		List<String> result = queryFactory
+				.select(
+						Expressions.stringTemplate(
+								"function('regexp_replace', {0}, {1}, {2})",
+								member.username, "member", "M"
+						)
+				)
+				.from(member)
+				.fetch();
+		for (String str : result) {
+			System.out.println("str = " + str);
+		}
+	}
+
+	@Test
+	public void sqlFunction2() {
+
+		List<String> result = queryFactory
+				.select(member.username)
+				.from(member)
+//				.where(
+//						member.username.eq(
+//								Expressions.stringTemplate(
+//										"function('lower', {0})", member.username
+//								)
+//						)
+//				)
+				.where(member.username.eq(member.username.lower()))
+				.fetch();
+
+		em.flush();
+		em.clear();
+
+		for (String str : result) {
+			System.out.println("str = " + str);
+		}
+	}
+
+
 }

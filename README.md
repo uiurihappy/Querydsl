@@ -21,6 +21,8 @@ spring:
         # jpql이 궁금할 때
         use_sql_comments: true
   #        default_batch_fetch_size: 500
+  # MySQL 8 방언
+    database-platform: org.hibernate.dialect.MySQL8Dialect
   devtools:
     restart:
       enabled: true
