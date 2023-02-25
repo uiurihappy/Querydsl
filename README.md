@@ -1,11 +1,14 @@
 # Querydsl
 ## Study for Spring Data JPA Querydsl
 
-
 ### application.yml
+###  test/resources, main/resources 에 추가
 
 ```
 spring:
+  # 샘플 데이터 추가, 환경에 따라 개발 서버는 dev, 운영은 production, test 서버는 test
+  profiles:
+    active: 
   datasource:
     url: jdbc:mysql://localhost:3306/${DB이름}?serverTimezone=Asia/Seoul
     username: ${DB 유저}
