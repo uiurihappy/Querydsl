@@ -2,14 +2,17 @@ package study.querydsl.repository;
 
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.support.PageableExecutionUtils;
 import study.querydsl.dto.MemberSearchCondition;
 import study.querydsl.dto.MemberTeamDto;
 import study.querydsl.dto.QMemberTeamDto;
+import study.querydsl.entity.Member;
 
 import java.util.List;
 
@@ -117,7 +120,7 @@ public class MemberRepositoryImpl implements MemberRepositoryCustom {
                 .fetch();
 
         // total Count 용 쿼리
-        long totalCount = queryFactory
+        JPAQuery<Member> countQuery = queryFactory
                 .select(member)
                 .from(member)
                 .leftJoin(member.team, team)
@@ -126,10 +129,12 @@ public class MemberRepositoryImpl implements MemberRepositoryCustom {
                         teamNameEq(condition.getTeamName()),
                         ageGoe(condition.getAgeGoe()),
                         ageLoe(condition.getAgeLoe())
-                )
-                // querydsl이 count query 랑 같이 내보낸다.
-                .fetchCount();
+                );
+        // querydsl이 count query 랑 같이 내보낸다.
+//                .fetchCount();
         // count 쿼리를 최적화하여 사용하는 것이 좋다.
-        return new PageImpl<>(results, pageable, totalCount);
+//        return new PageImpl<>(results, pageable, totalCount);
+
+        return PageableExecutionUtils.getPage(results, pageable, countQuery::fetchCount);
     }
 }
