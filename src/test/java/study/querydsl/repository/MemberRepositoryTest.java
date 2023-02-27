@@ -10,6 +10,7 @@ import org.springframework.data.domain.PageRequest;
 import study.querydsl.dto.MemberSearchCondition;
 import study.querydsl.dto.MemberTeamDto;
 import study.querydsl.entity.Member;
+import study.querydsl.entity.QMember;
 import study.querydsl.entity.Team;
 
 import java.util.List;
@@ -118,5 +119,46 @@ class MemberRepositoryTest {
 
     }
 
+    @Test
+    public void querydslPredicateExecutorTest() {
+
+        Team teamA = new Team("teamA");
+        Team teamB = new Team("teamB");
+
+        em.persist(teamA);
+        em.persist(teamB);
+
+        Member member1 = new Member("member1", 10, teamA);
+        Member member2 = new Member("member2", 20, teamB);
+
+        Member member3 = new Member("member3", 30, teamA);
+        Member member4 = new Member("member4", 40, teamB);
+
+
+//		Member member5 = new Member("MemberA", 50, teamA);
+//		Member member6 = new Member("MemberB", 60, teamB);
+
+
+        em.persist(member1);
+        em.persist(member2);
+        em.persist(member3);
+        em.persist(member4);
+//		em.persist(member5);
+//		em.persist(member6);
+
+        QMember member = QMember.member;
+        /*
+         querydslPredicateExecutor
+         1. 조인이 안됨 (left join)
+         2. 마찬가지로 querydsl에 의존한다.
+         3. 복잡한 연관관계 매핑하고 query를 작성하기 어렵다.
+         */
+
+        Iterable<Member> result1 = memberRepository.findAll(member.age.between(10, 40).and(member.username.eq("member1")));
+
+        for (Member findMember : result1) {
+            System.out.println("member = " + member);
+        }
+    }
 
 }
