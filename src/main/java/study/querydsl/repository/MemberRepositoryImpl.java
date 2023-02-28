@@ -10,7 +10,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.support.QuerydslRepositorySupport;
-import org.springframework.data.support.PageableExecutionUtils;
+import org.springframework.data.support.PageableExecutionUtils; //패키지 변경
 import study.querydsl.dto.MemberSearchCondition;
 import study.querydsl.dto.MemberTeamDto;
 import study.querydsl.dto.QMemberTeamDto;
@@ -171,8 +171,8 @@ public class MemberRepositoryImpl implements MemberRepositoryCustom {
                 .fetch();
 
         // total Count 용 쿼리
-        JPAQuery<Member> countQuery = queryFactory
-                .select(member)
+        JPAQuery<Long> countQuery = queryFactory
+                .select(member.count())
                 .from(member)
                 .leftJoin(member.team, team)
                 .where(
@@ -186,6 +186,6 @@ public class MemberRepositoryImpl implements MemberRepositoryCustom {
         // count 쿼리를 최적화하여 사용하는 것이 좋다.
 //        return new PageImpl<>(results, pageable, totalCount);
 
-        return PageableExecutionUtils.getPage(results, pageable, countQuery::fetchCount);
+        return PageableExecutionUtils.getPage(results, pageable, countQuery::fetchOne);
     }
 }

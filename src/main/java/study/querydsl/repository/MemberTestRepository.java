@@ -5,9 +5,9 @@ import com.querydsl.jpa.impl.JPAQuery;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.support.PageableExecutionUtils;
+import org.springframework.stereotype.Repository;
 import study.querydsl.dto.MemberSearchCondition;
 import study.querydsl.entity.Member;
-import study.querydsl.entity.QMember;
 import study.querydsl.repository.support.Querydsl4RepositorySupport;
 
 import java.util.List;
@@ -18,6 +18,7 @@ import static org.springframework.util.StringUtils.hasText;
 import static study.querydsl.entity.QMember.member;
 import static study.querydsl.entity.QTeam.team;
 
+@Repository
 public class MemberTestRepository extends Querydsl4RepositorySupport {
 
     public MemberTestRepository() {
@@ -35,22 +36,25 @@ public class MemberTestRepository extends Querydsl4RepositorySupport {
                 .fetch();
     }
 
-    public Page<Member> searchPageByApplyPage(MemberSearchCondition condition,
-                                              Pageable pageable) {
-        JPAQuery<Member> query = selectFrom(member)
+    public Page<Long> searchPageByApplyPage(MemberSearchCondition condition, Pageable pageable) {
+        JPAQuery<Long> query =
+                select(member.count().as("count")).from(member)
                 .leftJoin(member.team, team)
                 .where(usernameEq(condition.getUsername()),
                         teamNameEq(condition.getTeamName()),
                         ageGoe(condition.getAgeGoe()),
                         ageLoe(condition.getAgeLoe()));
-        List<Member> content = getQuerydsl().applyPagination(pageable, query)
+        List<Long> content = getQuerydsl()
+                .applyPagination(pageable, query)
                 .fetch();
-        return PageableExecutionUtils.getPage(content, pageable,
-                query::fetchCount);
+        return PageableExecutionUtils.getPage(content, pageable, query::fetchOne);
     }
 
+    //searchPageByApplyPage와 applyPagination 같은 코드
     public Page<Member> applyPagination(MemberSearchCondition condition, Pageable pageable) {
-        return applyPagination(pageable, contentQuery -> contentQuery
+        return applyPagination(pageable,
+                // Function
+                contentQuery -> contentQuery
                 .selectFrom(member)
                 .leftJoin(member.team, team)
                 .where(usernameEq(condition.getUsername()),
@@ -59,10 +63,12 @@ public class MemberTestRepository extends Querydsl4RepositorySupport {
                         ageLoe(condition.getAgeLoe())));
     }
 
-
+    // complex 해결 ver
     public Page<Member> applyPagination2(MemberSearchCondition condition, Pageable pageable) {
-        return applyPagination(pageable, contentQuery -> contentQuery
-                .selectFrom(member)
+        // applyPagination를 선언할 때 오버로드 하도록 하여 countQuery도 받을 수 있도록 한다.
+        return applyPagination(pageable,
+                contentQuery -> contentQuery
+                        .selectFrom(member)
                         .leftJoin(member.team, team)
                         .where(usernameEq(condition.getUsername()),
                                 teamNameEq(condition.getTeamName()),
